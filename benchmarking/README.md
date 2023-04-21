@@ -11,11 +11,11 @@ This is work in progress
 
 2. Install [pipenv](https://pypi.org/project/pipenv/) for plotting graphs.
 
-1.5 Install helm (in Fedora: "dnf install helm")
+1.5 Install helm (in Fedora: "dnf install helm netcat")
     Install python plotter libraries
 
 ```console
-pip3 install --user matplotlib pandas
+pip3 install --user matplotlib pandas requests
 ```
 
 ### Running the scripts together
@@ -78,4 +78,21 @@ usage: ./scripts/run-test.sh
 
 ## How to setup tracing
 
+# In containerd
+
 https://github.com/containerd/containerd/blob/main/docs/tracing.md
+
+# In crio
+
+```console
+mkdir -p /etc/crio/crio.conf.d
+cat > /etc/crio/crio.conf.d/10-enable-tracing.conf <<EOF
+[crio.tracing]
+enable_tracing = true
+tracing_endpoint = "127.0.0.1:30317"
+tracing_sampling_rate_per_million = 1000000
+EOF
+systemctl restart crio
+```
+
+See also https://github.com/cri-o/cri-o/blob/main/docs/crio.conf.5.md#criotracing-table
