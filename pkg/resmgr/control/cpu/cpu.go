@@ -127,6 +127,10 @@ func (ctl *cpuctl) PostStopHook(c cache.Container) error {
 	return nil
 }
 
+// TestHook is the memory controller testing hook.
+func (ctl *cpuctl) Test() {
+}
+
 // enforceCpufreq enforces a class-specific cpufreq configuration to a cpuset
 func (ctl *cpuctl) enforceCpufreq(class string, cpus ...int) error {
 	if _, ok := ctl.config.Classes[class]; !ok {

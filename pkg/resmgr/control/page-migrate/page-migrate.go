@@ -142,6 +142,10 @@ func (m *migration) PostStopHook(cc cache.Container) error {
 	return nil
 }
 
+// TestHook is the memory controller testing hook.
+func (m *migration) Test() {
+}
+
 // syncWithCache synchronizes tracked containers with the cache.
 func (m *migration) syncWithCache() {
 	m.Lock()

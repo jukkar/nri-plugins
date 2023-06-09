@@ -114,6 +114,10 @@ func (ctl *memctl) PostStopHook(c cache.Container) error {
 	return nil
 }
 
+// TestHook is the memory controller testing hook.
+func (ctl *memctl) Test() {
+}
+
 // Check if memory cgroup controller supports top tier soft limits.
 func (ctl *memctl) checkToptierLimitSupport() bool {
 	_, err := os.Stat(memoryCgroupPath + "/" + toptierSoftLimitControl)

@@ -42,6 +42,7 @@ type options struct {
 	NriPluginName     string
 	NriPluginIdx      string
 	NriSocket         string
+	E2ETestHTTPQuery  bool
 }
 
 // ResourceManager command line options.
@@ -72,7 +73,7 @@ func init() {
 		"Minimum interval between two container rebalancing attempts. Use 'disable' for disabling.")
 	flag.StringVar(&opt.StateDir, "state-dir", "/var/lib/nri-resource-policy",
 		"Permanent storage directory path for the resource manager to store its state in.")
-
+	flag.BoolVar(&opt.E2ETestHTTPQuery, "enable-e2e-test-http-query", false, "Allow query via HTTP when doing e2e testing.")
 	flag.BoolVar(&opt.DisableAgent, "disable-agent", false,
 		"Disable K8s cluster agent.")
 }

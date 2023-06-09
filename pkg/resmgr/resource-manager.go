@@ -143,6 +143,10 @@ func (m *resmgr) Start() error {
 		return err
 	}
 
+	if err := m.startControllers(); err != nil {
+                return err
+        }
+
 	if err := m.startEventProcessing(); err != nil {
 		return err
 	}
@@ -270,6 +274,15 @@ func (m *resmgr) setupIntrospection() error {
 func (m *resmgr) setupHealthCheck() {
 	mux := instrumentation.GetHTTPMux()
 	healthz.Setup(mux)
+}
+
+// startControllers start the resource controllers.
+func (m *resmgr) startControllers() error {
+        if err := m.control.StartStopControllers(m.cache, opt.E2ETestHTTPQuery); err != nil {
+                return resmgrError("failed to start resource controllers: %v", err)
+        }
+
+        return nil
 }
 
 // startIntrospection starts serving the external introspection requests.
