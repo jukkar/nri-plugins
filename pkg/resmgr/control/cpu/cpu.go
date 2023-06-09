@@ -15,8 +15,12 @@
 package cpu
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"sync"
 
+	"github.com/containers/nri-plugins/pkg/instrumentation"
 	"github.com/containers/nri-plugins/pkg/utils/cpuset"
 
 	pkgcfg "github.com/containers/nri-plugins/pkg/config"
@@ -33,10 +37,14 @@ const (
 
 	// CPUController is the name of the CPU controller.
 	CPUController = cache.CPU
+
+	// CPUControllerVersion is the running version of this controller.
+	CPUControllerVersion = "1"
 )
 
 // cpuctl encapsulates the runtime state of our CPU enforcement/controller.
 type cpuctl struct {
+	sync.Mutex `json:"-"` // we're lockable
 	cache   cache.Cache  // resource manager cache
 	system  sysfs.System // system topology
 	config  *config
@@ -58,6 +66,12 @@ type Class struct {
 	UncoreMaxFreq               uint `json:"uncoreMaxFreq"`
 }
 
+// snapshot is used to serialize the controller information into a json object.
+type snapshot struct {
+	Version    string
+	Classes    map[string]*Class
+}
+
 var log logger.Logger = logger.NewLogger(CPUController)
 
 // Ccontroller singleton instance.
@@ -70,6 +84,40 @@ func getCPUController() *cpuctl {
 		singleton.config = singleton.defaultOptions().(*config)
 	}
 	return singleton
+}
+
+func (ctl *cpuctl) snapshot() ([]byte, error) {
+	s := snapshot{
+		Version:    CPUControllerVersion,
+		Classes:    make(map[string]*Class),
+	}
+
+	for id, p := range ctl.config.Classes {
+		s.Classes[id] = &p
+	}
+
+	data, err := json.Marshal(s)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal CPU controller data: %v", err)
+	}
+
+	return data, nil
+}
+
+// dumpCPUControllerState prints internal info used by e2e testing script.
+func (ctl *cpuctl) dumpCPUControllerState(w http.ResponseWriter, req *http.Request) {
+	log.Debug("output CPU controller state...")
+
+	ctl.Lock()
+	defer ctl.Unlock()
+
+	data, err := ctl.snapshot()
+	if err != nil {
+		fmt.Fprintf(w, "Failed to print CPU controller state: %v\r\n", err)
+		return
+	}
+
+	fmt.Fprintf(w, "%s\r\n", data)
 }
 
 // Start initializes the controller for enforcing decisions.
@@ -129,6 +177,8 @@ func (ctl *cpuctl) PostStopHook(c cache.Container) error {
 
 // TestHook is the memory controller testing hook.
 func (ctl *cpuctl) Test() {
+	mux := instrumentation.GetHTTPMux()
+	mux.HandleFunc("/cpu-controller-state", ctl.dumpCPUControllerState)
 }
 
 // enforceCpufreq enforces a class-specific cpufreq configuration to a cpuset
