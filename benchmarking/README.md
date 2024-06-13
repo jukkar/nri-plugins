@@ -1,0 +1,98 @@
+# Demo setup
+
+This is work in progress
+
+## How to use
+
+0. In order to save container runtime logs, add yourself to systemd-journal
+   group and make sure you are in that group when running the script (use "id" command)
+
+1. Install [helm](https://helm.sh/) for installing Prometheus chart.
+
+2. Install [pipenv](https://pypi.org/project/pipenv/) for plotting graphs.
+
+1.5 Install helm (in Fedora: "dnf install helm netcat")
+    Install python plotter libraries
+
+```console
+pip3 install --user matplotlib pandas requests
+```
+
+### Running the scripts together
+
+3. Run the script, for example:
+
+```console
+template=~/nri-plugins/build/images/nri-resource-policy-template-deployment.yaml topology_aware=~/nri-plugins/build/images/nri-resource-policy-topology-aware-deployment.yaml balloons=~/nri-plugins/build/images/nri-resource-policy-balloons-deployment.yaml ./scripts/run-tests.sh
+```
+
+4. Run `pipenv shell`.
+
+5. Run `pipenv install`.
+
+6. Generate graphs with `plot-graphs.py`. If you use labels `baseline`, `template`, `topology-aware`, and `balloons` you can use the `post-run.sh` script.
+
+7. Remove all files from the output directory to not have overlapping labels (filenames).
+
+### Running the scripts individually
+
+3. Configure cluster to desired state.
+
+4. Run the `pre-run.sh` script. This deploys Jaeger and Prometheus. Example:
+
+```console
+./scripts/pre-run.sh
+```
+
+```console
+usage: ./scripts/pre-run.sh -p <use prometheus: "true" or "false">
+```
+
+5. Wait for the Jaeger and Prometheus pods to be ready.
+
+6. Run the test with `run-test.sh`. Example:
+
+```console
+./scripts/run-test.sh -n 10 -i 9 -l baseline
+```
+
+```console
+usage: ./scripts/run-test.sh
+    -n <number of stress-ng containers in increment>
+    -i <increments>
+    -l <filename label>
+    -s <time to sleep waiting to query results>
+```
+
+7. To remove installed resources, run `destroy-deployment.sh`.
+
+8. Repeat steps 1-5 for each desired setup and **label each setup with different labels that are not substrings of each other**.
+
+9. Run `pipenv shell`.
+
+10. Run `pipenv install`.
+
+11. Generate graphs with `plot-graphs.py`. If you use labels `baseline`, `template`, `topology-aware`, and `balloons` you can use the `post-run.sh` script.
+
+12. Remove all files from the output directory to not have overlapping labels (filenames).
+
+## How to setup tracing
+
+# In containerd
+
+https://github.com/containerd/containerd/blob/main/docs/tracing.md
+
+# In crio
+
+```console
+mkdir -p /etc/crio/crio.conf.d
+cat > /etc/crio/crio.conf.d/10-enable-tracing.conf <<EOF
+[crio.tracing]
+enable_tracing = true
+tracing_endpoint = "127.0.0.1:30317"
+tracing_sampling_rate_per_million = 1000000
+EOF
+systemctl restart crio
+```
+
+See also https://github.com/cri-o/cri-o/blob/main/docs/crio.conf.5.md#criotracing-table
